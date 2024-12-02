@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import permissions
 from rest_framework import viewsets
+from rest_framework import serializers
 
 from api.permissions import OwnerOrReadOnly
 from api.serializers import (CommentSerializer, FollowSerializer,
@@ -12,16 +13,18 @@ from posts.models import Post, Follow, Group
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (permissions.IsAuthenticated, OwnerOrReadOnly,)
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly, OwnerOrReadOnly,
+    )
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -50,10 +53,19 @@ class FollowViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticated, permissions.IsAuthenticatedOrReadOnly,
     )
     filter_backends = (filters.SearchFilter,)
+    pagination_class = None
     search_fields = ('^following__username',)
 
     def get_queryset(self):
         return Follow.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        following_username = self.request.data.get('following')
+        if Follow.objects.filter(
+            user=self.request.user,
+            following__username=following_username).exists() or\
+                following_username == self.request.user.username:
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого пользователя'
+            )
         serializer.save(user=self.request.user)
