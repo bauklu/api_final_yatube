@@ -1,8 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import permissions
-from rest_framework import viewsets
-from rest_framework import serializers
+from rest_framework import mixins, viewsets
 
 from api.permissions import OwnerOrReadOnly
 from api.serializers import (CommentSerializer, FollowSerializer,
@@ -46,7 +45,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, post=post)
 
 
-class FollowViewSet(viewsets.ModelViewSet):
+class FollowViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
+                    viewsets.GenericViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = (
@@ -57,15 +57,8 @@ class FollowViewSet(viewsets.ModelViewSet):
     search_fields = ('^following__username',)
 
     def get_queryset(self):
-        return Follow.objects.filter(user=self.request.user)
+        return Follow.objects.filter(user=self.request.user).select_related(
+            'following')
 
     def perform_create(self, serializer):
-        following_username = self.request.data.get('following')
-        if Follow.objects.filter(
-            user=self.request.user,
-            following__username=following_username).exists() or\
-                following_username == self.request.user.username:
-            raise serializers.ValidationError(
-                'Вы уже подписаны на этого пользователя'
-            )
         serializer.save(user=self.request.user)
