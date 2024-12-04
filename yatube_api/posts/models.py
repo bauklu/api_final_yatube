@@ -55,8 +55,9 @@ class Follow(models.Model):
         User, on_delete=models.CASCADE, related_name='following'
     )
 
-    class Meta:
-        unique_together = ('user', 'following')
+    constraints = [models.UniqueConstraint(
+        fields=['user', 'following'], name='unique_name'
+    )]
 
     def __str__(self):
         return f'{self.user}, {self.following}'
