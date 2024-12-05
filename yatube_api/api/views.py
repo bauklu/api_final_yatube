@@ -47,7 +47,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 class FollowViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
                     viewsets.GenericViewSet):
-    queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = (
         permissions.IsAuthenticated, permissions.IsAuthenticatedOrReadOnly,
@@ -57,7 +56,7 @@ class FollowViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
     search_fields = ('^following__username',)
 
     def get_queryset(self):
-        return self.request.user.follow.all()
+        return self.request.user.followers.all()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
