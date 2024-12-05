@@ -6,7 +6,7 @@ from rest_framework import mixins, viewsets
 from api.permissions import OwnerOrReadOnly
 from api.serializers import (CommentSerializer, FollowSerializer,
                              PostSerializer, GroupSerializer)
-from posts.models import Post, Follow, Group
+from posts.models import Post, Group
 
 
 class PostViewSet(viewsets.ModelViewSet):
